@@ -1,1 +1,5 @@
-secret_key: "sdhgcvdscvdscscjsbcdbh"
+secret_key: ""
+host: ""
+user: ""
+password: ""
+db: ""

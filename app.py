@@ -1,3 +1,4 @@
+from crypt import methods
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS, cross_origin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -85,6 +86,16 @@ def login():
             'message': 'User not found !!'
         }), 403
 
+@app.route('/genres', methods=['GET'])
+def getGenres():
+    mysql = database.Database()
+    genres = mysql.fetchGenres()
+    mysql.closeCursor()
+    return jsonify({
+                    'genres': genres
+                }), 200
+
+
 
 @app.route('/profile', methods=['GET'])
 def getProfile():
@@ -108,38 +119,105 @@ def getProfile():
         }), 401
 
 
-@app.route('/books', methods=['GET'])
+
+@app.route('/updateprofile', methods=['PUT'])
+def updateProfile():
+    mysql = database.Database()
+    payload = request.get_json()
+    user_id = payload['userId']
+    first_name = payload['firstName']
+    last_name = payload['lastName']
+    email_id = payload['emailId']
+    genre_1 = payload['genre1']
+    genre_2 = payload['genre2']
+    genre_3 = payload['genre3']
+    print(payload)
+    token = request.headers['Authorization'].split(" ")[1]
+    if maketoken.decode_token(app, user_id, token):
+        print("before update")
+        result = mysql.updateProfile(
+            user_id, first_name, last_name, email_id, genre_1, genre_2, genre_3)
+        mysql.con.commit()
+        mysql.closeCursor()
+        print("result:", result)
+        if result > 0:
+            return jsonify({"message": "success"}), 200
+    return jsonify({
+        'message': 'Token is invalid !!'
+    }), 401
+
+
+@app.route('/books', methods = ['GET'])
 def getBooks():
     mysql = database.Database()
-    result = mysql.getBooks()
-    if result > 0:
-        allBooks = mysql.cur.fetchall()
-        mysql.closeCursor()
-        return jsonify({"books": allBooks}), 200
+    keyword = request.args.get('keyword')
+    rating = int(request.args.get('rating'))
+    min_lp = int(request.args.get('min'))
+    max_lp = int(request.args.get('max'))
+    order = request.args.get('order')
+    page = int(request.args.get('page'))
+    get_new_count = request.args.get('getnewcount')
+    # print(get_new_count)
+    
+    # print("keyword:", keyword, "\trating:", rating, "\tmin:",min_lp, "\tmax:", max_lp, "\torder: ",order, "\tpage:",page)
+         
+    total_count, book_list = mysql.getBooksWithCount(keyword, rating, min_lp, max_lp, order, page, get_new_count) 
+    mysql.closeCursor()
+    if get_new_count == "true" :
+        return jsonify({
+            'total_count' : total_count,
+            'books': book_list
+        }), 200
     else:
-        mysql.closeCursor()
-        return jsonify({"message": "failure"}), 401
-
+        return jsonify({
+            'books': book_list
+        }), 200
 
 @app.route('/bookdata', methods=['GET'])
 def getBookData():
     mysql = database.Database()
     book_id = request.args.get('id')
     result = mysql.getBookData(book_id)
+    mysql.closeCursor()
     if result > 0:
         book = mysql.cur.fetchall()
-        mysql.closeCursor()
         return jsonify({"book": book[0]}), 200
     else:
         return jsonify({"message": "failure"}), 401
 
+@app.route('/bookdatarecommendations', methods=['GET'])
+def getBookDataRecommentation():
+    mysql = database.Database()
+    book_id = request.args.get('id')
+    result = mysql.getBookPageRecommendations(book_id)
+    mysql.closeCursor()
+    if len(result) > 0:
+        return jsonify({"book_recommendations": result}), 200
+    else:
+        return jsonify({"message": "failure"}), 401
+
+@app.route('/recommendations', methods=['GET'])
+def getRecommendations():
+    user_id = request.args.get('id')
+    print("user id:", user_id)
+    token = request.headers['Authorization'].split(" ")[1]
+    if maketoken.decode_token(app, int(user_id), token):
+        mysql = database.Database()
+        rec_list, len_rec_list = mysql.getRecommendationList(user_id)
+        mysql.closeCursor()
+        return jsonify({"recommendations": rec_list, "total_length": len_rec_list}), 200
+    else:
+        return jsonify({
+        'message': 'Token is invalid !!'
+    }), 401
+    
 
 @app.route('/mybooklist', methods=['GET'])
 def getBooklist():
-    mysql = database.Database()
     user_id = request.args.get('id')
     token = request.headers['Authorization'].split(" ")[1]
     if maketoken.decode_token(app, int(user_id), token):
+        mysql = database.Database()
         result = mysql.getBooklist(user_id)
         if result > 0:
             bookListDetails = mysql.cur.fetchall()
