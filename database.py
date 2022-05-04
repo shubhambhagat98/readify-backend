@@ -21,7 +21,7 @@ class Database:
 
     def getBooks(self):
         result = self.cur.execute(
-            "SELECT book_id, book_author, book_genre, book_image, book_like_percent, book_rating, book_score, book_title, book_votes FROM readify_book")
+            "SELECT book_id, book_author, book_genre, book_image, book_like_percent, book_rating, book_score, book_title, book_votes FROM readify_book limit 20000")
         return result
 
     def getBookData(self, book_id):
