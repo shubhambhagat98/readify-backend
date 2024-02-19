@@ -1,5 +1,3 @@
-https://github.com/shubhambhagat98/readify-backend/blob/68c46a54d078dcb1ec9935ad2e0a6d3818fbb37a/recommendation.py#L87-L95
-
 # Readify - An online book recommendation platform
 
 ![readify_thumb (4)](https://user-images.githubusercontent.com/53030762/202834255-ccd766c4-04e2-43a9-bae7-9cacfe7aec32.png)
